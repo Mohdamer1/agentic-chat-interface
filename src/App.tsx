@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, Upload, AlertTriangle, Download } from 'lucide-react';
 import FileUpload from '@/components/features/file-upload/FileUpload';
 import ChatInterface from '@/components/features/data-analysis/ChatInterface';
+import VisualizationPanel from '@/components/features/visualization/VisualizationPanel';
 import { ExportPanel } from '@/components/features/export';
 import { parseCSV, parseExcel, performEDA } from '@/services/data/dataProcessor';
 import { DataRow, EDAResults } from '@/types/data';
@@ -200,9 +201,12 @@ function App() {
       </div>
       
       <div className="px-0 py-6">
-        <ChatInterface edaResults={edaResults} rawData={rawData} />
+        <div className="max-w-7xl mx-auto">
+          <ChatInterface edaResults={edaResults} rawData={rawData} />
+        </div>
       </div>
-
+      
+      {/* Export Panel */}
       <ExportPanel
         data={rawData}
         filename={edaResults?.datasetInfo.fileName || 'dataset'}

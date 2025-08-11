@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Lightbulb, FileText } from 'lucide-react';
+import { Send, Bot, User, Lightbulb, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import { EDAResults, DataRow, CategoricalStats } from '@/types/data';
 import { groqService } from '@/services/api/groqService';
-import { exportService } from '@/services/data/exportService';
+
+import VisualizationPanel from '@/components/features/visualization/VisualizationPanel';
 
 interface Message {
   id: string;
@@ -28,15 +29,13 @@ interface ChatInterfaceProps {
 
 const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
-const CHART_KEYWORDS = [
-  'chart', 'plot', 'graph', 'visualize', 'draw', 'distribution', 'histogram', 'bar chart', 'pie chart',
-  'correlation', 'relationship', 'association', 'scatter', 'outlier', 'anomaly', 'summary', 'describe', 'overview', 'info', 'stat', 'mean', 'median', 'average', 'min', 'max', 'std', 'variance', 'insight', 'recommend', 'suggest', 'pattern', 'trend'
-];
+
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ edaResults, rawData }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showVisualizations, setShowVisualizations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastDatasetRef = useRef<{fileName: string, totalRows: number} | null>(null);
 
@@ -64,37 +63,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ edaResults, rawData }) =>
     startConversationalEDA();
   }, [edaResults]);
 
-  const handleExportChat = async () => {
-    try {
-      const data = messages.map((msg, index) => ({
-        'Message #': index + 1,
-        'Type': msg.type === 'user' ? 'User Question' : 'AI Response',
-        'Content': msg.content,
-        'Timestamp': msg.timestamp.toLocaleString(),
-        'Chart Type': msg.chartType || 'None',
-        'Has KPIs': msg.kpis ? 'Yes' : 'No'
-      }));
-      await exportService.exportToCSV(data, 'chat_conversation.csv');
-    } catch (error) {
-      console.error(`Export failed: ${error}`);
-    }
-  };
 
-  const handleExportInsights = async () => {
-    try {
-      const insights = messages
-        .filter(msg => msg.type === 'assistant' && msg.content.length > 50)
-        .map((msg, index) => ({
-          'Insight #': index + 1,
-          'Content': msg.content,
-          'Chart Type': msg.chartType || 'None',
-          'Timestamp': msg.timestamp.toLocaleString()
-        }));
-      await exportService.exportToCSV(insights, 'ai_insights.csv');
-    } catch (error) {
-      console.error(`Export failed: ${error}`);
-    }
-  };
 
   const startConversationalEDA = async () => {
     const edaSteps = [
@@ -709,6 +678,35 @@ Mean: ${numStat.mean}, Standard Deviation: ${numStat.std}`,
           )}
           <div ref={messagesEndRef} />
         </div>
+        
+        {/* Expandable Visualizations Section */}
+        {edaResults && (
+          <div className="border-t border-gray-200 bg-gray-50">
+            <button
+              onClick={() => setShowVisualizations(!showVisualizations)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                <span className="font-medium text-gray-900">Data Visualizations & Charts</span>
+                <span className="text-sm text-gray-500">
+                  ({edaResults.categoricalStats.length + edaResults.numericStats.length} charts available)
+                </span>
+              </div>
+              {showVisualizations ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+            
+            {showVisualizations && (
+              <div className="px-4 pb-4">
+                <VisualizationPanel edaResults={edaResults} />
+              </div>
+            )}
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="flex space-x-3">
           <input
