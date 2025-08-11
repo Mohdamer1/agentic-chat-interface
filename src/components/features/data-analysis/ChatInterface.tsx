@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Lightbulb } from 'lucide-react';
+import { Send, Bot, User, Lightbulb, FileText } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import { EDAResults, DataRow, CategoricalStats } from '@/types/data';
 import { groqService } from '@/services/api/groqService';
+import { exportService } from '@/services/data/exportService';
 
 interface Message {
   id: string;
@@ -62,6 +63,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ edaResults, rawData }) =>
     setMessages([]); // Clear previous messages before starting new EDA
     startConversationalEDA();
   }, [edaResults]);
+
+  const handleExportChat = async () => {
+    try {
+      const data = messages.map((msg, index) => ({
+        'Message #': index + 1,
+        'Type': msg.type === 'user' ? 'User Question' : 'AI Response',
+        'Content': msg.content,
+        'Timestamp': msg.timestamp.toLocaleString(),
+        'Chart Type': msg.chartType || 'None',
+        'Has KPIs': msg.kpis ? 'Yes' : 'No'
+      }));
+      await exportService.exportToCSV(data, 'chat_conversation.csv');
+    } catch (error) {
+      console.error(`Export failed: ${error}`);
+    }
+  };
+
+  const handleExportInsights = async () => {
+    try {
+      const insights = messages
+        .filter(msg => msg.type === 'assistant' && msg.content.length > 50)
+        .map((msg, index) => ({
+          'Insight #': index + 1,
+          'Content': msg.content,
+          'Chart Type': msg.chartType || 'None',
+          'Timestamp': msg.timestamp.toLocaleString()
+        }));
+      await exportService.exportToCSV(insights, 'ai_insights.csv');
+    } catch (error) {
+      console.error(`Export failed: ${error}`);
+    }
+  };
 
   const startConversationalEDA = async () => {
     const edaSteps = [
@@ -611,6 +644,14 @@ Mean: ${numStat.mean}, Standard Deviation: ${numStat.std}`,
   return (
     <div className="w-full">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 140px)' }}>
+        {/* Header with Export Buttons */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center space-x-3">
+            <Bot className="h-6 w-6 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">AI Data Analysis Chat</h3>
+          </div>
+        </div>
+        
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.map((message) => (
             <div
