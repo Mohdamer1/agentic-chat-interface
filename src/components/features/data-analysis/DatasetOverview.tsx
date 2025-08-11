@@ -1,17 +1,62 @@
 import React from 'react';
 import { DatasetInfo } from '@/types/data';
-import { Database, FileText, Hash, AlertTriangle } from 'lucide-react';
+import { Database, FileText, Hash, AlertTriangle, Download } from 'lucide-react';
+import { exportService } from '@/services/data/exportService';
 
 interface DatasetOverviewProps {
   datasetInfo: DatasetInfo;
 }
 
 const DatasetOverview: React.FC<DatasetOverviewProps> = ({ datasetInfo }) => {
+  const handleExportDatasetInfo = async () => {
+    try {
+      const data = datasetInfo.columns.map(col => ({
+        'Column Name': col.name,
+        'Data Type': col.type,
+        'Missing Count': col.nullCount,
+        'Missing Percentage': `${col.nullPercentage.toFixed(1)}%`,
+        'Unique Count': col.uniqueCount,
+        'Sample Values': col.sampleValues.join(', ')
+      }));
+      await exportService.exportToCSV(data, 'dataset_overview.csv');
+    } catch (error) {
+      console.error(`Export failed: ${error}`);
+    }
+  };
+
+  const handleExportSampleData = async () => {
+    try {
+      await exportService.exportToCSV(datasetInfo.sampleData, 'sample_data.csv');
+    } catch (error) {
+      console.error(`Export failed: ${error}`);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center space-x-3 mb-6">
-        <Database className="h-6 w-6 text-blue-600" />
-        <h2 className="text-xl font-semibold text-gray-900">Dataset Overview</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <Database className="h-6 w-6 text-blue-600" />
+          <h2 className="text-xl font-semibold text-gray-900">Dataset Overview</h2>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={handleExportDatasetInfo}
+            className="flex items-center space-x-2 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+            title="Export Dataset Info as CSV"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Export Info</span>
+          </button>
+          <button
+            onClick={handleExportSampleData}
+            className="flex items-center space-x-2 px-3 py-2 text-sm bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
+            title="Export Sample Data as CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export Sample</span>
+          </button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

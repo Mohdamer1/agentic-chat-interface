@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Upload, AlertTriangle } from 'lucide-react';
+import { BarChart3, Upload, AlertTriangle, Download } from 'lucide-react';
 import FileUpload from '@/components/features/file-upload/FileUpload';
 import ChatInterface from '@/components/features/data-analysis/ChatInterface';
+import { ExportPanel } from '@/components/features/export';
 import { parseCSV, parseExcel, performEDA } from '@/services/data/dataProcessor';
 import { DataRow, EDAResults } from '@/types/data';
 import { validateEnvironment } from '@/utils/envValidation';
@@ -12,6 +13,7 @@ function App() {
   const [edaResults, setEdaResults] = useState<EDAResults | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [envErrors, setEnvErrors] = useState<string[]>([]);
+  const [showExportPanel, setShowExportPanel] = useState(false);
 
   // Validate environment on component mount
   useEffect(() => {
@@ -177,13 +179,22 @@ function App() {
                 <p className="text-gray-600">{edaResults.datasetInfo.fileName} • {edaResults.datasetInfo.totalRows.toLocaleString()} rows • {edaResults.datasetInfo.totalColumns} columns</p>
               </div>
             </div>
-            <button
-              onClick={handleNewUpload}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Upload className="h-4 w-4" />
-              <span>New Dataset</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowExportPanel(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                <span>Export Data</span>
+              </button>
+              <button
+                onClick={handleNewUpload}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                <span>New Dataset</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -191,6 +202,15 @@ function App() {
       <div className="px-0 py-6">
         <ChatInterface edaResults={edaResults} rawData={rawData} />
       </div>
+
+      <ExportPanel
+        data={rawData}
+        filename={edaResults?.datasetInfo.fileName || 'dataset'}
+        isVisible={showExportPanel}
+        onClose={() => setShowExportPanel(false)}
+        edaResults={edaResults}
+        chartElements={[]} // TODO: Pass actual chart elements when available
+      />
     </div>
   );
 }

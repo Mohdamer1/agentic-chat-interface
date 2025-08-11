@@ -1,6 +1,7 @@
 import React from 'react';
 import { NumericStats, CategoricalStats } from '@/types/data';
-import { BarChart3, PieChart } from 'lucide-react';
+import { BarChart3, PieChart, Download, FileText } from 'lucide-react';
+import { exportService } from '@/services/data/exportService';
 
 interface StatisticsPanelProps {
   numericStats: NumericStats[];
@@ -8,14 +9,64 @@ interface StatisticsPanelProps {
 }
 
 const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ numericStats, categoricalStats }) => {
+  const handleExportStats = async (type: 'numeric' | 'categorical') => {
+    try {
+      let data: any[] = [];
+      let filename = '';
+      
+      if (type === 'numeric') {
+        data = numericStats.map(stat => ({
+          Column: stat.column,
+          Count: stat.count,
+          Mean: stat.mean,
+          Std: stat.std,
+          Min: stat.min,
+          '25%': stat.q25,
+          '50% (Median)': stat.median,
+          '75%': stat.q75,
+          Max: stat.max
+        }));
+        filename = 'numeric_statistics.csv';
+      } else {
+        data = categoricalStats.map(stat => ({
+          Column: stat.column,
+          Count: stat.count,
+          Unique: stat.unique,
+          'Most Frequent': stat.top,
+          Frequency: stat.freq,
+          'Top Values': Object.entries(stat.distribution)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([value, count]) => `${value}:${count}`)
+            .join(', ')
+        }));
+        filename = 'categorical_statistics.csv';
+      }
+      
+      await exportService.exportToCSV(data, filename);
+    } catch (error) {
+      console.error(`Export failed: ${error}`);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Numeric Statistics */}
       {numericStats.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Numeric Statistics</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <BarChart3 className="h-6 w-6 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Numeric Statistics</h3>
+            </div>
+            <button
+              onClick={() => handleExportStats('numeric')}
+              className="flex items-center space-x-2 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+              title="Export as CSV"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Export</span>
+            </button>
           </div>
           
           <div className="space-y-4">
@@ -65,9 +116,19 @@ const StatisticsPanel: React.FC<StatisticsPanelProps> = ({ numericStats, categor
       {/* Categorical Statistics */}
       {categoricalStats.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <PieChart className="h-6 w-6 text-emerald-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Categorical Statistics</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <PieChart className="h-6 w-6 text-emerald-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Categorical Statistics</h3>
+            </div>
+            <button
+              onClick={() => handleExportStats('categorical')}
+              className="flex items-center space-x-2 px-3 py-2 text-sm bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
+              title="Export as CSV"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Export</span>
+            </button>
           </div>
           
           <div className="space-y-4">
